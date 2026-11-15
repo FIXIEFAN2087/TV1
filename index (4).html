@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TV — Пульт</title>
+<style>
+  :root { --bg:#0b0e18; --panel:#141a2c; --border:#2a3352; --text:#e8ecf7; --muted:#8a93b2; --accent:#ff007f; --grad:linear-gradient(90deg,#ff007f,#7928ca); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .wrap { width:100%; max-width:520px; }
+  h1 { font-size:22px; font-weight:900; background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-transform:uppercase; margin-bottom:16px; }
+  .card-ch { display:flex; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:12px 16px; margin-bottom:10px; text-decoration:none; color:var(--text); transition:.15s; }
+  .card-ch:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .card-ch img { width:56px; height:56px; border-radius:10px; object-fit:cover; background:#000; flex:none; }
+  .card-ch b { display:block; font-size:15px; margin-bottom:3px; }
+  .card-ch span { color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TV — Пульт</h1>
+  <a class="card-ch" href="channel_smeshariki.html"><img src="https://lh3.googleusercontent.com/d/18xKX_FMnfQc555BHX40EppWZshSq0wK1" alt=""><div><b>СмешТВ</b><span>101 эпизодов · ~88 ч эфира</span></div></a>
+<a class="card-ch" href="channel_smeshariki2.html"><img src="https://lh3.googleusercontent.com/d/165GNzoFaaqjAd6f-NDtH7g1w8ZXph_7O" alt=""><div><b>СмешТВ INTERNATIONAL</b><span>100 эпизодов · ~10 ч эфира</span></div></a>
+<a class="card-ch" href="channel_smeshariki3.html"><img src="https://lh3.googleusercontent.com/d/165GNzoFaaqjAd6f-NDtH7g1w8ZXph_7O" alt=""><div><b>SmeshTV INTERNATIONAL</b><span>100 эпизодов · ~10 ч эфира</span></div></a>
+<a class="card-ch" href="channel_minecraft.html"><img src="https://lh3.googleusercontent.com/d/1LJ6ZRIuBvK2TjVQ5ba5OdfqVoNJ2q8Dn" alt=""><div><b>Майн</b><span>8883 эпизодов · ~2097 ч эфира</span></div></a>
+<a class="card-ch" href="channel_vibe.html"><img src="https://lh3.googleusercontent.com/d/1UDjAWQ26hCgvtE4v18xwfVZX0keq0Mp8" alt=""><div><b>Вайб!</b><span>32 эпизодов · ~14 ч эфира</span></div></a>
+
+</div>
+</body>
+</html>

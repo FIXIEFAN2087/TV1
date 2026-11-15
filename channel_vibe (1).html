@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вайб! — TV 24/7</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  :root {
+    --bg: #0b0e18; --panel: #141a2c; --panel2: #1a2138; --border: #2a3352;
+    --text: #e8ecf7; --muted: #8a93b2; --accent: #ff007f; --green: #39e75f;
+    --grad: linear-gradient(90deg, #ff007f, #7928ca);
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  .app-container { display: flex; max-width: 1400px; margin: 0 auto; min-height: 100vh; padding: 20px; gap: 20px; }
+  
+  .sidebar { width: 320px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px; height: fit-content; }
+  .sidebar h2 { font-size: 13px; letter-spacing: 2px; color: var(--muted); font-weight: 700; }
+  .channel-list { display: flex; flex-direction: column; gap: 8px; }
+  .channel-btn { background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 14px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: .15s; }
+  .channel-btn:hover { border-color: var(--accent); }
+  .channel-btn.active { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 4px 15px rgba(255,0,127,0.4); }
+  .channel-num { font-size: 11px; opacity: 0.7; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 6px; }
+
+  .main-content { flex: 1; display: flex; flex-direction: column; gap: 16px; max-width: 1000px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .brand-logo { font-size: 24px; font-weight: 900; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+  .live-clock { text-align: right; }
+  .live-clock .time { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .live-clock .date { color: var(--muted); font-size: 12px; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(57,231,95,.1); border: 1px solid rgba(57,231,95,.4); color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 999px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+  .tv { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 12px; box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+  .screen { position: relative; border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 16/9; width: 100%; }
+  
+  .screen-guard { position: absolute; inset: 0; z-index: 5; pointer-events: auto; }
+  .video-container { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .video-container iframe { width: 100%; height: 100%; border: 0; }
+
+  .live-watermark { position: absolute; inset: 0; z-index: 3; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .live-watermark img { width: 100%; height: 100%; object-fit: fill; display: block; opacity: 0; transition: opacity 0.5s ease; }
+  .live-watermark img.visible { opacity: 1; }
+
+  .off-air { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #000; z-index: 20; text-align: center; gap: 14px; }
+  .power-btn { background: var(--grad); color: #fff; border: none; font-weight: 800; font-size: 16px; padding: 14px 28px; border-radius: 999px; cursor: pointer; box-shadow: 0 8px 24px rgba(255,0,127,.6); transition: transform .15s; }
+  .power-btn:hover { transform: translateY(-2px); }
+  
+  .tv-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 2px; }
+  .controls button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); padding: 0 16px; height: 38px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: .15s; }
+  .controls button:hover { border-color: var(--accent); }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; }
+  .card h2 { font-size: 11px; letter-spacing: 2px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+  .now-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .progress { height: 6px; background: #0d1122; border-radius: 999px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--grad); width: 0%; transition: width 1s linear; }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .next-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(42,51,82,.4); font-size: 13px; }
+  .next-item:last-child { border-bottom: none; }
+  .next-item .when { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  footer { text-align: center; color: var(--muted); font-size: 11px; }
+
+  @media (max-width: 900px) { .app-container { flex-direction: column; } .sidebar { width: 100%; } }
+</style>
+</head>
+<body oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;">
+<div class="app-container">
+  <div class="sidebar">
+    <h2>ПЛЕЙЛИСТ</h2>
+    <div class="channel-list"><a class="channel-btn" href="channel_smeshariki.html" style="text-decoration:none;color:inherit;"><span>СмешТВ</span><span class="channel-num">101</span></a>
+<a class="channel-btn" href="channel_smeshariki2.html" style="text-decoration:none;color:inherit;"><span>СмешТВ INTERNATIONAL</span><span class="channel-num">100</span></a>
+<a class="channel-btn" href="channel_smeshariki3.html" style="text-decoration:none;color:inherit;"><span>SmeshTV INTERNATIONAL</span><span class="channel-num">100</span></a>
+<a class="channel-btn" href="channel_minecraft.html" style="text-decoration:none;color:inherit;"><span>Майн</span><span class="channel-num">8883</span></a>
+<a class="channel-btn active" href="channel_vibe.html" style="text-decoration:none;color:inherit;"><span>Вайб!</span><span class="channel-num">32</span></a>
+</div>
+  </div>
+  <div class="main-content">
+    <header>
+      <div class="header-left">
+        <div class="brand-logo" id="header-brand">Вайб!</div>
+        <span class="live-badge"><span class="live-dot"></span>ПРЯМОЙ ЭФИР</span>
+      </div>
+      <div class="live-clock"><div class="time" id="clock">--:--</div><div class="date" id="date"></div></div>
+    </header>
+    <div class="tv">
+      <div class="screen">
+        <div class="screen-guard" id="screen-guard"></div>
+        <div class="live-watermark"><img id="watermark-logo-img" src="https://lh3.googleusercontent.com/d/1UDjAWQ26hCgvtE4v18xwfVZX0keq0Mp8" alt="Логотип"></div>
+        <div class="video-container"><div id="player"></div></div>
+        <div class="off-air" id="unmute-overlay">
+          <div style="font-size:18px;font-weight:700;">Вайб!</div>
+          <button class="power-btn" onclick="startTV()">▶ Включить эфир</button>
+        </div>
+      </div>
+      <div class="tv-bar">
+        <div style="font-size:13px;color:var(--muted);">Вайб!</div>
+        <div class="controls"><button onclick="toggleMute()" id="mute-btn">🔇 Звук</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>СЕЙЧАС В ЭФИРЕ</h2>
+      <div class="now-title" id="now-title">Загрузка…</div>
+      <div class="progress"><div id="prog"></div></div>
+      <div class="times"><span id="elapsed">00:00</span><span id="remain">осталось --:--</span></div>
+    </div>
+    <div class="card">
+      <h2>ДАЛЕЕ В ЭФИРЕ</h2>
+      <div id="next-list"></div>
+    </div>
+    <footer>TV 24/7 · <a href="index.html" style="color:var(--muted);">Все каналы</a></footer>
+  </div>
+</div>
+<script>
+const SCHED = [{"id": "vZf1oXNFFG4", "duration": 2596, "title": "Майнкрафт наизнанку: Суперсилы | 13+"}, {"id": "vZf1oXNFFG4", "duration": "8:57", "title": "Майнкрафт наизнанку. Приключения AleKS`а: Начало | 13+"}, {"id": "vZf1oXNFFG4", "duration": "9:06", "title": "Майнкрафт наизнанку. Приключения AleKS`а 2: Секретный проход | 13+"}, {"id": "lSYlSigNT-k", "duration": 5094, "title": "Яндекс.Колонка с Алисой | 18+"}, {"id": "WULuYBNSNN8", "duration": 623, "title": "Дети-супергерои. 1 сезон | 13+"}, {"id": "2TMzfMRX7VQ", "duration": 722, "title": "Дети-супергерои. 2 сезон | 13+"}, {"id": "HnvcJcKkRgI", "duration": "9:43", "title": "Дети-супергерои. 3 сезон | 13+"}, {"id": "hHLk6fi0BCuE", "duration": "13:48", "title": "Фрэгас | 11+"}, {"id": "IiyvR7k-oaQ", "duration": 732, "title": "Кошки | 13+"}, {"id": "MWmcBlp1hdw", "duration": 757, "title": "Кошки. Нападение мышей | 13+"}, {"id": "fdDof2tYAdA", "duration": 732, "title": "Кошки. Битва за роутер | 13+"}, {"id": "zNlUjPth92s", "duration": "39:40", "title": "Кошки. Фильм | 13+"}, {"id": "hxFqD7rFCHY", "duration": "11:27", "title": "Кошки. Весенние приключения | 13+"}, {"id": "KOrXH4P2lYM", "duration": "11:57", "title": "Кошки. Лапа помощи | 13+"}, {"id": "qzGM2tzbPZM", "duration": "11:41", "title": "Кошки и хозяева | 13+"}, {"id": "M39ibSy85iw", "duration": "12:09", "title": "Кошки. Ой, милота! | 13+"}, {"id": "YuWeWcgdiHU", "duration": "11:52", "title": "Кошки. Шерстяные клубки | 13+"}, {"id": "-s1wllkcJY8", "duration": "13:08", "title": "Кошки. Веселые истории | 13+"}, {"id": "O0l7Obz5GDM", "duration": "13:52", "title": "Кошки. Юбилейный сезон | 13+"}, {"id": "vvpYz6GNFbw", "duration": "1:12:50", "title": "Специальная серия влогов | 13+"}, {"id": "yOdZ-eBnk5o", "duration": "1:52:47", "title": "Специальная серия влогов. Питер | 13+"}, {"id": "TOeAkmS8j2s", "duration": "39:04", "title": "НейроМузAleKS | 15+"}, {"id": "Gn2-lKghcO8", "duration": "41:03", "title": "НейроМузAleKS. Новая волна | 15+"}, {"id": "X98laQopxX4", "duration": "1:00:24", "title": "Приключения, Дачные приключения, Азбука Ютуберов, МультКлипы | 11+"}, {"id": "9Pyr5Dfw1B0", "duration": "31:57", "title": "Майнкрафт наизнанку | 13+"}, {"id": "ruiyqHyhqfM", "duration": "31:57", "title": "Майнкрафт наизнанку 2. 1 сезон | 13+"}, {"id": "o1Pv19WZNOg", "duration": "30:30", "title": "Майнкрафт наизнанку 2. 2 сезон. 1-5 серии | 13+"}, {"id": "Y2RQzntJ3rY", "duration": "7:24", "title": "Майнкрафт наизнанку 2. 2 сезон. 6 серия | 13+"}, {"id": "nLlGqd7IddY", "duration": 1246, "title": "Майнкрафт наизнанку: Последний перезапуск | 13+"}, {"id": "uBEY2TBJ4xo", "duration": 1246, "title": "Майнкрафт наизнанку: Путешествие | 13+"}, {"id": "hBYW8uaiCDq0", "duration": 1372, "title": "Майнкрафт наизнанку: Город | 13+"}, {"id": "rom5GpRXHJo", "duration": 1247, "title": "Майнкрафт наизнанку: Новые приключения | 13+"}];
+const TOTAL = SCHED.reduce((a,s)=>a+parseDuration(s.duration),0);
+const T0 = Date.UTC(2026,0,1);
+
+function parseDuration(v) {
+  if (typeof v === 'number') return v;
+  if (!v) return 0;
+  const p = String(v).split(':').map(Number);
+  return p.length===3 ? p[0]*3600+p[1]*60+p[2] : p.length===2 ? p[0]*60+p[1] : Number(v)||0;
+}
+
+function scheduleState(now) {
+  let t = ((now - T0)/1000) % TOTAL;
+  if (t < 0) t += TOTAL;
+  for (let i=0;i<SCHED.length;i++) {
+    const d = parseDuration(SCHED[i].duration);
+    if (t < d) return { idx:i, offset:Math.floor(t), remain:Math.floor(d-t) };
+    t -= d;
+  }
+  return { idx:0, offset:0, remain:0 };
+}
+
+let player = null, playerIdx = -1;
+
+function startTV() {
+  document.getElementById('unmute-overlay').style.display = 'none';
+  document.getElementById('screen-guard').style.pointerEvents = 'none';
+  if (player) return;
+  const st = scheduleState(Date.now());
+  playerIdx = st.idx;
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+  window.onYouTubeIframeAPIReady = function() {
+    player = new YT.Player('player', {
+      videoId: SCHED[st.idx].id,
+      playerVars: {
+        autoplay: 1, mute: 1, controls: 0, start: st.offset,
+        playsinline: 1, rel: 0, modestbranding: 1, disablekb: 1, iv_load_policy: 3
+      }
+    });
+    syncLoop();
+  };
+}
+
+function syncLoop() {
+  setInterval(() => {
+    if (!player || !player.loadVideoById) return;
+    const st = scheduleState(Date.now());
+    if (st.idx !== playerIdx) {
+      playerIdx = st.idx;
+      player.loadVideoById({ videoId: SCHED[st.idx].id, startSeconds: st.offset });
+    }
+  }, 2000);
+}
+
+let muted = true;
+function toggleMute() {
+  if (!player || !player.unMute) return;
+  muted = !muted;
+  muted ? player.mute() : player.unMute();
+  document.getElementById('mute-btn').textContent = muted ? '🔇 Звук' : '🔊 Выключить звук';
+}
+
+function updateUI() {
+  const now = Date.now();
+  const st = scheduleState(now);
+  const ep = SCHED[st.idx];
+  const d = parseDuration(ep.duration);
+  document.getElementById('now-title').textContent = ep.title;
+  document.getElementById('prog').style.width = (st.offset/d*100).toFixed(2) + '%';
+  const f = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(Math.floor(s%60)).padStart(2,'0');
+  document.getElementById('elapsed').textContent = f(st.offset);
+  document.getElementById('remain').textContent = 'осталось ' + f(st.remain);
+  let html_ = '';
+  for (let k=1;k<=5;k++) {
+    const e2 = SCHED[(st.idx+k)%SCHED.length];
+    const when = new Date(now + (st.remain + SCHED.slice(st.idx+1, st.idx+k).reduce((a,s)=>a+parseDuration(s.duration),0))*1000);
+    const t = e2.title.replace(/</g,'&lt;');
+    html_ += '<div class="next-item"><span>' + t + '</span><span class="when">' +
+      String(when.getHours()).padStart(2,'0') + ':' + String(when.getMinutes()).padStart(2,'0') + '</span></div>';
+  }
+  document.getElementById('next-list').innerHTML = html_;
+  document.getElementById('clock').textContent = new Date(now).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('date').textContent = new Date(now).toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'});
+  if (playerIdx >= 0) document.getElementById('watermark-logo-img').classList.add('visible');
+}
+updateUI();
+setInterval(updateUI, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СмешТВ INTERNATIONAL — TV 24/7</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  :root {
+    --bg: #0b0e18; --panel: #141a2c; --panel2: #1a2138; --border: #2a3352;
+    --text: #e8ecf7; --muted: #8a93b2; --accent: #ff007f; --green: #39e75f;
+    --grad: linear-gradient(90deg, #ff007f, #7928ca);
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  .app-container { display: flex; max-width: 1400px; margin: 0 auto; min-height: 100vh; padding: 20px; gap: 20px; }
+  
+  .sidebar { width: 320px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px; height: fit-content; }
+  .sidebar h2 { font-size: 13px; letter-spacing: 2px; color: var(--muted); font-weight: 700; }
+  .channel-list { display: flex; flex-direction: column; gap: 8px; }
+  .channel-btn { background: var(--panel2); border: 1px solid var(--border); color: var(--text); padding: 14px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: .15s; }
+  .channel-btn:hover { border-color: var(--accent); }
+  .channel-btn.active { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 4px 15px rgba(255,0,127,0.4); }
+  .channel-num { font-size: 11px; opacity: 0.7; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 6px; }
+
+  .main-content { flex: 1; display: flex; flex-direction: column; gap: 16px; max-width: 1000px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .brand-logo { font-size: 24px; font-weight: 900; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+  .live-clock { text-align: right; }
+  .live-clock .time { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .live-clock .date { color: var(--muted); font-size: 12px; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(57,231,95,.1); border: 1px solid rgba(57,231,95,.4); color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 999px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+  .tv { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 12px; box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+  .screen { position: relative; border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 16/9; width: 100%; }
+  
+  .screen-guard { position: absolute; inset: 0; z-index: 5; pointer-events: auto; }
+  .video-container { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .video-container iframe { width: 100%; height: 100%; border: 0; }
+
+  .live-watermark { position: absolute; inset: 0; z-index: 3; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .live-watermark img { width: 100%; height: 100%; object-fit: fill; display: block; opacity: 0; transition: opacity 0.5s ease; }
+  .live-watermark img.visible { opacity: 1; }
+
+  .off-air { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #000; z-index: 20; text-align: center; gap: 14px; }
+  .power-btn { background: var(--grad); color: #fff; border: none; font-weight: 800; font-size: 16px; padding: 14px 28px; border-radius: 999px; cursor: pointer; box-shadow: 0 8px 24px rgba(255,0,127,.6); transition: transform .15s; }
+  .power-btn:hover { transform: translateY(-2px); }
+  
+  .tv-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 2px; }
+  .controls button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); padding: 0 16px; height: 38px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: .15s; }
+  .controls button:hover { border-color: var(--accent); }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; }
+  .card h2 { font-size: 11px; letter-spacing: 2px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+  .now-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .progress { height: 6px; background: #0d1122; border-radius: 999px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--grad); width: 0%; transition: width 1s linear; }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .next-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(42,51,82,.4); font-size: 13px; }
+  .next-item:last-child { border-bottom: none; }
+  .next-item .when { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  footer { text-align: center; color: var(--muted); font-size: 11px; }
+
+  @media (max-width: 900px) { .app-container { flex-direction: column; } .sidebar { width: 100%; } }
+</style>
+</head>
+<body oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;">
+<div class="app-container">
+  <div class="sidebar">
+    <h2>ПЛЕЙЛИСТ</h2>
+    <div class="channel-list"><a class="channel-btn" href="channel_smeshariki.html" style="text-decoration:none;color:inherit;"><span>СмешТВ</span><span class="channel-num">101</span></a>
+<a class="channel-btn active" href="channel_smeshariki2.html" style="text-decoration:none;color:inherit;"><span>СмешТВ INTERNATIONAL</span><span class="channel-num">100</span></a>
+<a class="channel-btn" href="channel_smeshariki3.html" style="text-decoration:none;color:inherit;"><span>SmeshTV INTERNATIONAL</span><span class="channel-num">100</span></a>
+<a class="channel-btn" href="channel_minecraft.html" style="text-decoration:none;color:inherit;"><span>Майн</span><span class="channel-num">8883</span></a>
+<a class="channel-btn" href="channel_vibe.html" style="text-decoration:none;color:inherit;"><span>Вайб!</span><span class="channel-num">32</span></a>
+</div>
+  </div>
+  <div class="main-content">
+    <header>
+      <div class="header-left">
+        <div class="brand-logo" id="header-brand">СмешТВ INTERNATIONAL</div>
+        <span class="live-badge"><span class="live-dot"></span>ПРЯМОЙ ЭФИР</span>
+      </div>
+      <div class="live-clock"><div class="time" id="clock">--:--</div><div class="date" id="date"></div></div>
+    </header>
+    <div class="tv">
+      <div class="screen">
+        <div class="screen-guard" id="screen-guard"></div>
+        <div class="live-watermark"><img id="watermark-logo-img" src="https://lh3.googleusercontent.com/d/165GNzoFaaqjAd6f-NDtH7g1w8ZXph_7O" alt="Логотип"></div>
+        <div class="video-container"><div id="player"></div></div>
+        <div class="off-air" id="unmute-overlay">
+          <div style="font-size:18px;font-weight:700;">СмешТВ INTERNATIONAL</div>
+          <button class="power-btn" onclick="startTV()">▶ Включить эфир</button>
+        </div>
+      </div>
+      <div class="tv-bar">
+        <div style="font-size:13px;color:var(--muted);">СмешТВ INTERNATIONAL</div>
+        <div class="controls"><button onclick="toggleMute()" id="mute-btn">🔇 Звук</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>СЕЙЧАС В ЭФИРЕ</h2>
+      <div class="now-title" id="now-title">Загрузка…</div>
+      <div class="progress"><div id="prog"></div></div>
+      <div class="times"><span id="elapsed">00:00</span><span id="remain">осталось --:--</span></div>
+    </div>
+    <div class="card">
+      <h2>ДАЛЕЕ В ЭФИРЕ</h2>
+      <div id="next-list"></div>
+    </div>
+    <footer>TV 24/7 · <a href="index.html" style="color:var(--muted);">Все каналы</a></footer>
+  </div>
+</div>
+<script>
+const SCHED = [{"id": "-W2tJmIJltg", "duration": 390, "title": "KikOriki : 1 - The Bench!"}, {"id": "rL8u4Y6holg", "duration": 390, "title": "Принц для Нюши - Смешарики 2D"}, {"id": "U13KJMaJKk8", "duration": 390, "title": "Куда уходит Старый год? - Смешарики 2D"}, {"id": "oC27Mz_0r2A", "duration": 390, "title": "Фанерное солнце - Смешарики 2D"}, {"id": "2s2pM5aAfBc", "duration": 390, "title": "Энергия храпа - Смешарики 2D"}, {"id": "odbwz_86Xvg", "duration": 390, "title": "Железная няня - Смешарики 2D"}, {"id": "Rc84ZglMJVY", "duration": 390, "title": "Подарок судьбы - Смешарики 2D"}, {"id": "IZ2BQ0lQQv0", "duration": 390, "title": "Кто первый? - Смешарики 2D"}, {"id": "DYgaq4lJd00", "duration": 390, "title": "Некультурный - Смешарики 2D"}, {"id": "-DzwOFVaMmQ", "duration": 390, "title": "Забытая история - Смешарики 2D"}, {"id": "JMCnGTNwXX0", "duration": 390, "title": "Рояль - Смешарики 2D"}, {"id": "wVH6vZiWrl8", "duration": 390, "title": "Как собрать друзей по-быстрому - Смешарики 2D"}, {"id": "B6qZlPXe_a4", "duration": 390, "title": "Телеграф - Смешарики 2D"}, {"id": "wC-mrwnfQZ0", "duration": 390, "title": "Коллекция - Смешарики 2D"}, {"id": "oGelCZ_cG1g", "duration": 390, "title": "Лили - Смешарики 2D"}, {"id": "rqAMbxbXr4c", "duration": 390, "title": "Биография зонтика - Смешарики 2D"}, {"id": "qpw-7O72DP8", "duration": 390, "title": "Ля - Смешарики 2D"}, {"id": "Iu9y-2nEAG0", "duration": 390, "title": "Путь в приличное общество - Смешарики 2D"}, {"id": "wvU2Y946C58", "duration": 390, "title": "День рождения Нюши - Смешарики 2D"}, {"id": "D25OYJ4hdys", "duration": 390, "title": "Гольф - Смешарики 2D"}, {"id": "38a0f-fXZCc", "duration": 390, "title": "Полёты во сне и наяву - Смешарики 2D"}, {"id": "pCdly8Bm5YY", "duration": 390, "title": "Событие века - Смешарики 2D"}, {"id": "UsYe59gDCOI", "duration": 390, "title": "Как стать звездой - Смешарики 2D"}, {"id": "7F6eE0w4SWE", "duration": 390, "title": "Новые зубы Кроша - Смешарики 2D"}, {"id": "8I1JS1cC8Mw", "duration": 390, "title": "Балласт - Смешарики 2D"}, {"id": "ociddcCFe2Y", "duration": 390, "title": "Рецепт хорошего отдыха - Смешарики 2D"}, {"id": "okjt6KBVvaw", "duration": 390, "title": "Водные процедуры - Смешарики 2D"}, {"id": "1z8nmmFj8EQ", "duration": 390, "title": "Красота - Смешарики 2D"}, {"id": "jWwvuKaFsJc", "duration": 390, "title": "Последняя радуга - Смешарики 2D"}, {"id": "pUuSRISUpEQ", "duration": 390, "title": "Большие гонки - Смешарики 2D"}, {"id": "WXjUaWMOOQw", "duration": 390, "title": "Магнетизм - Смешарики 2D"}, {"id": "rhRexgFZ00A", "duration": 390, "title": "Тайное общество - Смешарики 2D"}, {"id": "rrgiVX5ulV0", "duration": 390, "title": "Что нужно всем - Смешарики 2D"}, {"id": "USMZm1QLPXs", "duration": 390, "title": "Торжество разума - Смешарики 2D"}, {"id": "deSfIYuukCk", "duration": 390, "title": "Живые часы - Смешарики 2D"}, {"id": "ciq8VPeJHcI", "duration": 390, "title": "Это сладкое слово \"мёд\" - Смешарики 2D"}, {"id": "Ggp6bUL23mk", "duration": 390, "title": "Играй, Гармония! - Смешарики 2D"}, {"id": "QSKYQKJq0ME", "duration": 390, "title": "Горы и конфеты - Смешарики 2D"}, {"id": "j0TT6ZHxp0s", "duration": 390, "title": "Талисман - Смешарики 2D"}, {"id": "x3HBYvvYufk", "duration": 390, "title": "Страшилка для Нюши - Смешарики 2D"}, {"id": "t8iggRi0MSU", "duration": 390, "title": "Маленькое большое Море - Смешарики 2D"}, {"id": "M4a5U9AIeac", "duration": 390, "title": "Операция Дед мороз - Смешарики 2D"}, {"id": "VEORBPrwuto", "duration": 390, "title": "Думают ли о Вас На звёздах? - Смешарики 2D"}, {"id": "pwEc7d0eUdg", "duration": 390, "title": "Приятные новости - Смешарики 2D"}, {"id": "fgGz-tIF43c", "duration": 390, "title": "Бабочка - Смешарики 2D"}, {"id": "yhz_tbfoPNk", "duration": 390, "title": "Археология - Смешарики 2D"}, {"id": "HA2BbmebIDc", "duration": 390, "title": "Метеорология - Смешарики 2D"}, {"id": "iszyng98aLo", "duration": 390, "title": "Танцор Диско - Смешарики 2D"}, {"id": "gPrfogZBys0", "duration": 390, "title": "Мыльная опера - Смешарики 2D"}, {"id": "qPWSgPVNZq0", "duration": 390, "title": "Долгая рыбалка - Смешарики 2D"}, {"id": "iXQ81zQzw0Y", "duration": 390, "title": "Ремонт - дело коллективное - Смешарики 2D"}, {"id": "47qA-RMRtVc", "duration": 390, "title": "Обещание - Смешарики 2D"}, {"id": "PZRBcDn1BOM", "duration": 390, "title": "Педагогическая поэма - Смешарики 2D"}, {"id": "ngGOhNnkVd8", "duration": 390, "title": "Прощай, Бараш! - Смешарики 2D"}, {"id": "-DzuecgGawo", "duration": 390, "title": "Мисс Вселенная - Смешарики 2D"}, {"id": "9IsFUwqf188", "duration": 390, "title": "-41°С - Смешарики 2D"}, {"id": "9HkNyA55I70", "duration": 390, "title": "Футбол 1-й тайм - Смешарики 2D"}, {"id": "XwOtseL3btw", "duration": 390, "title": "Футбол 2-ой тайм - Смешарики 2D"}, {"id": "MfdSBO1IPYo", "duration": 390, "title": "ОРЗ - Смешарики 2D"}, {"id": "ifkQmUwx_QI", "duration": 390, "title": "Снотворец - Смешарики 2D"}, {"id": "2tkSZRrMRQE", "duration": 390, "title": "В начале было слово - Смешарики 2D"}, {"id": "yOfYwFdqOVU", "duration": 390, "title": "Ульи Копатыча - Смешарики 2D"}, {"id": "TFYm7jOwhnM", "duration": 390, "title": "День справедливости - Смешарики 2D"}, {"id": "I5mNfhsimfA", "duration": 390, "title": "Кордебалет - Смешарики 2D"}, {"id": "ywkGQskUbFk", "duration": 390, "title": "Дар - Смешарики 2D"}, {"id": "PYz64y9Ue-k", "duration": 390, "title": "Большой куш - Смешарики 2D"}, {"id": "ey-7n-dNUIs", "duration": 390, "title": "Невоспитанный клон - Смешарики 2D"}, {"id": "KSkaA0406Kw", "duration": 390, "title": "Основной инстинкт - Смешарики 2D"}, {"id": "MTlwV2Yj1RI", "duration": 390, "title": "Масленица - Смешарики 2D"}, {"id": "m4VFGJXr27g", "duration": 390, "title": "Ежидзе - Смешарики 2D"}, {"id": "BX_WEjnr0_4", "duration": 390, "title": "Как здорово сочинять стихи - Смешарики 2D"}, {"id": "iFU3cuX31F8", "duration": 390, "title": "Ёжик и здоровье - Смешарики 2D"}, {"id": "uJxO8TMj-uI", "duration": 390, "title": "Биби и его папа - Смешарики 2D"}, {"id": "bKsPf-TZmOQ", "duration": 390, "title": "Моя прелесть - Смешарики 2D"}, {"id": "mNmG6dmToEc", "duration": 390, "title": "Двигатель прогресса - Смешарики 2D"}, {"id": "cXlM3ofUqKw", "duration": 390, "title": "Маскарад - Смешарики 2D"}, {"id": "nAhLGJHHdlQ", "duration": 390, "title": "Бойкот - Смешарики 2D"}, {"id": "yfPjfVryjMc", "duration": 390, "title": "Каникулы Биби - Смешарики 2D"}, {"id": "li2r8KszZno", "duration": 390, "title": "Космическая одиссея. Часть 1 - Смешарики 2D"}, {"id": "opp3DPHlYZ4", "duration": 390, "title": "Космическая одиссея. Часть 2 - Смешарики 2D"}, {"id": "HVTilP58rCg", "duration": 390, "title": "Скверная примета - Смешарики 2D"}, {"id": "2kXxiuPzsg4", "duration": 390, "title": "Личная жизнь - Смешарики 2D"}, {"id": "laQnmjBrd2o", "duration": 390, "title": "Роман в письмах - Смешарики 2D"}, {"id": "9GYbnREDGTo", "duration": 390, "title": "Плюс снег, минус елка - Смешарики 2D"}, {"id": "i-9FtF6ToPg", "duration": 390, "title": "Её звали Нюша - Смешарики 2D"}, {"id": "dVYKNtI4UOA", "duration": 390, "title": "Ежик в Туманности - Смешарики 2D"}, {"id": "KI7ytiGgeLs", "duration": 390, "title": "Взаперти - Смешарики 2D"}, {"id": "4ubFiAp3vLw", "duration": 390, "title": "Линии судьбы - Смешарики 2D"}, {"id": "0yMer_OQi4c", "duration": 390, "title": "Трюфель - Смешарики 2D"}, {"id": "5KtKMLCsA-k", "duration": 390, "title": "Реалист - Смешарики 2D"}, {"id": "XZiIAsNInPg", "duration": 390, "title": "Аноним - Смешарики 2D"}, {"id": "lK3xzYGej8w", "duration": 390, "title": "Куда приводят желания - Смешарики 2D"}, {"id": "ptOc6UfJY4c", "duration": 390, "title": "Край земли - Смешарики 2D"}, {"id": "zzfubODk_8E", "duration": 390, "title": "Полоса невезения - Смешарики 2D"}, {"id": "SNGSx1Xp5Ro", "duration": 390, "title": "Кулинария - Смешарики 2D"}, {"id": "9hMZwwa9Xek", "duration": 390, "title": "Секрет Гудини - Смешарики 2D"}, {"id": "nOTaxfOEfrE", "duration": 390, "title": "Комната грусти - Смешарики 2D"}, {"id": "fXck-6OLaNM", "duration": 390, "title": "Вестибулярный аппарат - Смешарики 2D"}, {"id": "sZusnhp0Guc", "duration": 390, "title": "Герой Плутона - Смешарики 2D"}, {"id": "Pjxr08Cw59w", "duration": 390, "title": "Смысл жизни - Смешарики 2D"}];
+const TOTAL = SCHED.reduce((a,s)=>a+parseDuration(s.duration),0);
+const T0 = Date.UTC(2026,0,1);
+
+function parseDuration(v) {
+  if (typeof v === 'number') return v;
+  if (!v) return 0;
+  const p = String(v).split(':').map(Number);
+  return p.length===3 ? p[0]*3600+p[1]*60+p[2] : p.length===2 ? p[0]*60+p[1] : Number(v)||0;
+}
+
+function scheduleState(now) {
+  let t = ((now - T0)/1000) % TOTAL;
+  if (t < 0) t += TOTAL;
+  for (let i=0;i<SCHED.length;i++) {
+    const d = parseDuration(SCHED[i].duration);
+    if (t < d) return { idx:i, offset:Math.floor(t), remain:Math.floor(d-t) };
+    t -= d;
+  }
+  return { idx:0, offset:0, remain:0 };
+}
+
+let player = null, playerIdx = -1;
+
+function startTV() {
+  document.getElementById('unmute-overlay').style.display = 'none';
+  document.getElementById('screen-guard').style.pointerEvents = 'none';
+  if (player) return;
+  const st = scheduleState(Date.now());
+  playerIdx = st.idx;
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+  window.onYouTubeIframeAPIReady = function() {
+    player = new YT.Player('player', {
+      videoId: SCHED[st.idx].id,
+      playerVars: {
+        autoplay: 1, mute: 1, controls: 0, start: st.offset,
+        playsinline: 1, rel: 0, modestbranding: 1, disablekb: 1, iv_load_policy: 3
+      }
+    });
+    syncLoop();
+  };
+}
+
+function syncLoop() {
+  setInterval(() => {
+    if (!player || !player.loadVideoById) return;
+    const st = scheduleState(Date.now());
+    if (st.idx !== playerIdx) {
+      playerIdx = st.idx;
+      player.loadVideoById({ videoId: SCHED[st.idx].id, startSeconds: st.offset });
+    }
+  }, 2000);
+}
+
+let muted = true;
+function toggleMute() {
+  if (!player || !player.unMute) return;
+  muted = !muted;
+  muted ? player.mute() : player.unMute();
+  document.getElementById('mute-btn').textContent = muted ? '🔇 Звук' : '🔊 Выключить звук';
+}
+
+function updateUI() {
+  const now = Date.now();
+  const st = scheduleState(now);
+  const ep = SCHED[st.idx];
+  const d = parseDuration(ep.duration);
+  document.getElementById('now-title').textContent = ep.title;
+  document.getElementById('prog').style.width = (st.offset/d*100).toFixed(2) + '%';
+  const f = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(Math.floor(s%60)).padStart(2,'0');
+  document.getElementById('elapsed').textContent = f(st.offset);
+  document.getElementById('remain').textContent = 'осталось ' + f(st.remain);
+  let html_ = '';
+  for (let k=1;k<=5;k++) {
+    const e2 = SCHED[(st.idx+k)%SCHED.length];
+    const when = new Date(now + (st.remain + SCHED.slice(st.idx+1, st.idx+k).reduce((a,s)=>a+parseDuration(s.duration),0))*1000);
+    const t = e2.title.replace(/</g,'&lt;');
+    html_ += '<div class="next-item"><span>' + t + '</span><span class="when">' +
+      String(when.getHours()).padStart(2,'0') + ':' + String(when.getMinutes()).padStart(2,'0') + '</span></div>';
+  }
+  document.getElementById('next-list').innerHTML = html_;
+  document.getElementById('clock').textContent = new Date(now).toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('date').textContent = new Date(now).toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'});
+  if (playerIdx >= 0) document.getElementById('watermark-logo-img').classList.add('visible');
+}
+updateUI();
+setInterval(updateUI, 1000);
+</script>
+</body>
+</html>
